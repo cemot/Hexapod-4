@@ -24,6 +24,16 @@ class MovementVector
     {
     }
 
+    double GetRoll()
+    {
+      return this->roll;
+    }
+
+    double GetPitch()
+    {
+      return this->pitch;
+    }
+
     void SetSurge(double f)
     {
       this->surge += f;
@@ -32,6 +42,16 @@ class MovementVector
     void SetYaw(double y)
     {
       this->yaw += y;
+    }
+
+    void SetPitch(double f)
+    {
+      this->pitch += f;
+    }
+
+    void SetRoll(double y)
+    {
+      this->roll += y;
     }
 
     void SetStop()
@@ -114,6 +134,7 @@ class MovementVector
       }
     }
 
+  private:
     double surge;
     double sway;
     double heave;
@@ -121,6 +142,5 @@ class MovementVector
     double pitch;
     double yaw;
 
-  private:
 };
 

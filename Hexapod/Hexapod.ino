@@ -5,11 +5,15 @@
 #include "Movement.h";
 #include <SoftwareSerial.h>
 #include "MovementController.h";
+#include "BodyMovement.h";
+#include "InverseKinematics.h";
 
 String command = ""; // Stores response of the HC-06 Bluetooth device
 int ledPin = 13;
 SoftwareSerial mySerial(10, 11); // RX, TX
 MovementVector movementVector;
+BodyMovementCalc bodyMovementCalc;
+InverseKinematicsLimb* inverseKinematicsLimb = new InverseKinematicsLimb(15, 55, 90);
 
 void setup() {
   Serial.begin(9600);
@@ -35,9 +39,28 @@ void loop() {
   }
 
   // handle movement vector
-  // send to MovementController
-  
-  // check movement interval
+  // calculate body base position Q
+  double aRoll = movementVector.GetRoll() * 1.0; // todo
+  double aPitch = movementVector.GetPitch() * 1.0; // todo
+  endpoints* qEndpoints = bodyMovementCalc.CalculateQ(pEndpoints, aRoll, aPitch);
+
+  // calculate leg endpoint S from the time/step multiplexer
+  // NB for initial tests might start with static leg positions using a fixed offset from the body base position. Allows to shake and roll the body....
+
+  // calculate leg differences T
+  // T = Q - S
+  point* test = new point(0, 110, 80);
+  endpoints* T = new endpoints(test, test, test, test, test, test);
+
+  // calculate leg angles alpha, beta, gamma using IK
+  // T1 to T6
+  // angle leg 1
+  limbAngles* l1 = inverseKinematicsLimb->CalculateAngles(T->p1);
+  // also calculate all other legs 2 to 6
+
+  // send leg angles to MovementController
+
+  // wait till executed and recalculate next step and position
   delay(100);
 }
 
@@ -53,6 +76,10 @@ void ParseCommand(String command) {
     response += "l: left\r\n";
     response += "r: right\r\n";
     response += "s: stop\r\n";
+    response += "<: roll left\r\n";
+    response += ">: roll right\r\n";
+    response += "[: pitch front\r\n";
+    response += "]: pitch rear\r\n";
     response += "x: light led 13\r\n";
     response += "?: display this help\r\n";
   }
@@ -84,6 +111,26 @@ void ParseCommand(String command) {
     response = "Yaw right";
     movementVector.SetYaw(-1.0);
     ServoMovement(StraightMovement);
+  }
+  else if (command == "<")
+  {
+    response = "Roll left";
+    movementVector.SetRoll(-1.0);
+  }
+  else if (command == ">")
+  {
+    response = "Roll right";
+    movementVector.SetRoll(1.0);
+  }
+  else if (command == "[")
+  {
+    response = "Pitch front";
+    movementVector.SetPitch(1.0);
+  }
+  else if (command == "]")
+  {
+    response = "Pitch rear";
+    movementVector.SetPitch(-1.0);
   }  else if (command == "s")
   {
     stopMovement = true;
