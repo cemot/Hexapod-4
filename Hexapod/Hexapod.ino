@@ -1,70 +1,56 @@
 // Sketch to control hexapod
 
-#include <Servo.h>
-#include "ServoControl.h";
-#include "Movement.h";
 #include <SoftwareSerial.h>
 #include "MovementController.h";
 #include "BodyMovement.h";
-#include "InverseKinematics.h";
 
 String command = ""; // Stores response of the HC-06 Bluetooth device
 int ledPin = 13;
-SoftwareSerial mySerial(10, 11); // RX, TX
+//SoftwareSerial mySerial(10, 11); // RX, TX
 MovementVector movementVector;
-BodyMovementCalc bodyMovementCalc;
-InverseKinematicsLimb* inverseKinematicsLimb = new InverseKinematicsLimb(15, 55, 90);
+ServoControllerBoard _servoControllerBoard = *new ServoControllerBoard(Serial1, Serial);
+BodyMovementCalc bodyMovementCalc = *new BodyMovementCalc(_servoControllerBoard);
 
 void setup() {
   Serial.begin(9600);
   Serial.println("Hexapod Lives! Pair 'hexapod' with passkey '1234'.");
   pinMode(ledPin, OUTPUT);
-  mySerial.begin(9600);
-  delay(10);
-  mySerial.println("Hexapod Lives! Enter '?' for help.");
-
-  ServoInit();
+  Serial1.begin(9600);
+  delay(200);
+  //Serial1.println("Hexapod Lives! Enter '?' for help.");
+  _servoControllerBoard.Init();
 }
 
 void loop() {
   // Read device output if available.
-  if (mySerial.available()) {
-    while (mySerial.available()) { // While there is more to be read, keep reading.
-      command += (char)mySerial.read();
+  if (Serial.available()) {
+    while (Serial.available()) { // While there is more to be read, keep reading.
+      command += (char)Serial.read();
       delay(10);
     }
 
-    ParseCommand(command);
+    ParseCommandUpdateMovementVector(command);
     command = ""; // No repeats
   }
+
+  while (Serial1.available()) { // While there is more to be read, keep reading.
+    Serial.print(Serial1.read());
+  }
+
 
   // handle movement vector
   // calculate body base position Q
   double aRoll = movementVector.GetRoll() * 1.0; // todo
   double aPitch = movementVector.GetPitch() * 1.0; // todo
-  endpoints* qEndpoints = bodyMovementCalc.CalculateQ(pEndpoints, aRoll, aPitch);
 
-  // calculate leg endpoint S from the time/step multiplexer
-  // NB for initial tests might start with static leg positions using a fixed offset from the body base position. Allows to shake and roll the body....
-
-  // calculate leg differences T
-  // T = Q - S
-  point* test = new point(0, 110, 80);
-  endpoints* T = new endpoints(test, test, test, test, test, test);
-
-  // calculate leg angles alpha, beta, gamma using IK
-  // T1 to T6
-  // angle leg 1
-  limbAngles* l1 = inverseKinematicsLimb->CalculateAngles(T->p1);
-  // also calculate all other legs 2 to 6
-
-  // send leg angles to MovementController
+  // endpoints* qEndpoints = bodyMovementCalc.CalculateQ(pEndpoints, aRoll, aPitch);
+  bodyMovementCalc.Move(); // calculate new steps and send them to the servo controller.
 
   // wait till executed and recalculate next step and position
-  delay(100);
+  delay(50);  // TODO: might make a more advanced timing mechanism
 }
 
-void ParseCommand(String command) {
+void ParseCommandUpdateMovementVector(String command) {
   String response = "";
   digitalWrite(13, LOW);
   bool stopMovement = true;
@@ -92,25 +78,21 @@ void ParseCommand(String command) {
   {
     response = "Forward";
     movementVector.SetSurge(1.0);
-    ServoMovement(StraightMovement);
   }
   else if (command == "b")
   {
     response = "Backward";
     movementVector.SetSurge(-1.0);
-    ServoMovement(StraightMovement);
   }
   else if (command == "l")
   {
     response = "Yaw left";
     movementVector.SetYaw(1.0);
-    ServoMovement(StraightMovement);
   }
   else if (command == "r")
   {
     response = "Yaw right";
     movementVector.SetYaw(-1.0);
-    ServoMovement(StraightMovement);
   }
   else if (command == "<")
   {
@@ -144,8 +126,8 @@ void ParseCommand(String command) {
   }
 
   response += "\r\n";
-  mySerial.println(response);
-  mySerial.print("Movement Vector : ");
-  mySerial.println(movementVector.ToString());
+  Serial.println(response);
+  Serial.print("Movement Vector : ");
+  Serial.println(movementVector.ToString());
 }
 

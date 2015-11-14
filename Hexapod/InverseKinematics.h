@@ -1,4 +1,8 @@
+#ifndef INVERSEKINEMATICS_H
+#define INVERSEKINEMATICS_H
+
 #include <math.h>;
+#include "BodyMovement.h";
 
 struct limbAngles
 {
@@ -50,4 +54,4 @@ class InverseKinematicsLimb
     double femur;
     double tibia;
 };
-
+#endif

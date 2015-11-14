@@ -3,6 +3,11 @@
 Defines the walking patterns
 */
 
+#ifndef MOVEMENT_H
+#define MOVEMENT_H
+
+#include "HexapodStruct.h";
+
 LegMovement lmWait = { 0, 0, 0 };
 LegMovement lmLiftLeg2 = { 0, 1, 0 }; // lift using 2nd servo
 LegMovement lmLiftLeg3 = { 0, 0, 1 }; // lift using 3rd servo
@@ -52,4 +57,4 @@ PodMovementStep StraightMovement[] = {
     lmBackward,lmForward,
   }
 };
-
+#endif

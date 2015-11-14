@@ -2,6 +2,9 @@
  * Class that handles the movement vector and updates the Servo's
  */
 
+#ifndef MOVEMENTCONTROLLER_H
+#define MOVEMENTCONTROLLER_H
+
 class MovementController
 {
     MovementController() {};
@@ -143,4 +146,4 @@ class MovementVector
     double yaw;
 
 };
-
+#endif
