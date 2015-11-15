@@ -23,40 +23,55 @@ void setup() {
 
 void loop() {
   // Read device output if available.
+  bool executeMovement = false;
   if (Serial.available()) {
     while (Serial.available()) { // While there is more to be read, keep reading.
       command += (char)Serial.read();
       delay(10);
     }
 
-    ParseCommandUpdateMovementVector(command);
+    executeMovement = ParseCommandUpdateMovementVector(command);
     command = ""; // No repeats
   }
 
-  while (Serial1.available()) { // While there is more to be read, keep reading.
-    Serial.print(Serial1.read());
+  // handle movement vector
+  if(executeMovement)
+  {
+    Serial.println("EXEC MOVE VECTOR");
+    // calculate body base position Q
+    double aRoll = movementVector.GetRoll() * 1.0; // todo
+    double aPitch = movementVector.GetPitch() * 1.0; // todo
+  
+    // endpoints* qEndpoints = bodyMovementCalc.CalculateQ(pEndpoints, aRoll, aPitch);
+    bodyMovementCalc.Move(); // calculate new steps and send them to the servo controller.
+    executeMovement = false;
   }
 
-
-  // handle movement vector
-  // calculate body base position Q
-  double aRoll = movementVector.GetRoll() * 1.0; // todo
-  double aPitch = movementVector.GetPitch() * 1.0; // todo
-
-  // endpoints* qEndpoints = bodyMovementCalc.CalculateQ(pEndpoints, aRoll, aPitch);
-  bodyMovementCalc.Move(); // calculate new steps and send them to the servo controller.
+  // copy output from servo board to regular serial port
+    bool dataReceived = false;
+    while (Serial1.available()) { // While there is more to be read, keep reading.
+      int inByte = Serial1.read();
+      Serial.write(inByte);
+      dataReceived = true;
+    }
+    
+    if(dataReceived) Serial.println("");
 
   // wait till executed and recalculate next step and position
-  delay(50);  // TODO: might make a more advanced timing mechanism
+  delay(20);  // TODO: might make a more advanced timing mechanism
 }
 
-void ParseCommandUpdateMovementVector(String command) {
-  String response = "";
+bool ParseCommandUpdateMovementVector(String command) {
+  String response = "\r\n";
   digitalWrite(13, LOW);
   bool stopMovement = true;
+  bool executeCommand = true;
   if (command == "?" || command == "")
   {
     response += "Commands:\r\n";
+    response += "i: init position\r\n";
+    response += "d: down\r\n";
+    response += "u: up\r\n";
     response += "f: forward\r\n";
     response += "b: backward\r\n";
     response += "l: left\r\n";
@@ -68,60 +83,83 @@ void ParseCommandUpdateMovementVector(String command) {
     response += "]: pitch rear\r\n";
     response += "x: light led 13\r\n";
     response += "?: display this help\r\n";
+    executeCommand = false;
   }
   else if (command == "x")
   {
-    response = "Lights on!";
+    response += "Lights on!";
     digitalWrite(13, HIGH);
+  }
+ else if (command == "i")
+  {
+    executeCommand = false;
+    response += "Init";
+//    movementVector.SetHeave(0.0);
+    bodyMovementCalc.Lift(0);
+  }  else if (command == "d")
+  {
+    executeCommand = false;
+    response += "Down";
+//    movementVector.SetHeave(0.0);
+    bodyMovementCalc.Lift(-1);
+  }
+  else if (command == "u")
+  {
+    executeCommand = false;
+    response += "Up";
+//    movementVector.SetHeave(1.0);
+    bodyMovementCalc.Lift(1);
   }
   else if (command == "f")
   {
-    response = "Forward";
+    response += "Forward";
     movementVector.SetSurge(1.0);
   }
   else if (command == "b")
   {
-    response = "Backward";
+    response += "Backward";
     movementVector.SetSurge(-1.0);
   }
   else if (command == "l")
   {
-    response = "Yaw left";
+    response += "Yaw left";
     movementVector.SetYaw(1.0);
   }
   else if (command == "r")
   {
-    response = "Yaw right";
+    response += "Yaw right";
     movementVector.SetYaw(-1.0);
   }
   else if (command == "<")
   {
-    response = "Roll left";
+    response += "Roll left";
     movementVector.SetRoll(-1.0);
   }
   else if (command == ">")
   {
-    response = "Roll right";
+    response += "Roll right";
     movementVector.SetRoll(1.0);
   }
   else if (command == "[")
   {
-    response = "Pitch front";
+    response += "Pitch front";
     movementVector.SetPitch(1.0);
   }
   else if (command == "]")
   {
-    response = "Pitch rear";
+    response += "Pitch rear";
     movementVector.SetPitch(-1.0);
-  }  else if (command == "s")
+  }  
+  else if (command == "s")
   {
     stopMovement = true;
-    response = "Stop";
+    response += "Stop";
     movementVector.SetStop();
   }
   else if (command == "p")
   {
     String p = String("#MV:S:2.5;Y:0.0;H:0.0;r:1.2;p:0.0;y:-1.5;");
+    response += "Parse " + p;
     movementVector.Parse(p);
   }
 
@@ -129,5 +167,7 @@ void ParseCommandUpdateMovementVector(String command) {
   Serial.println(response);
   Serial.print("Movement Vector : ");
   Serial.println(movementVector.ToString());
+
+  return executeCommand;
 }
 

@@ -14,7 +14,7 @@
 #include <HardwareSerial.h>;
 
 #define NUMBER_OF_SERVOS 18
-#define INITIAL_POSITION 1200
+#define INITIAL_POSITION 1500
 
 class ServoControllerBoard
 {
@@ -35,6 +35,5 @@ class ServoControllerBoard
   private:
     Stream& _stream;
     Stream& _debugStream;
-    int positions[NUMBER_OF_SERVOS + 1];
 };
 #endif

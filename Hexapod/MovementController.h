@@ -37,6 +37,11 @@ class MovementVector
       return this->pitch;
     }
 
+    void SetHeave(double z)
+    {
+      this->heave += z;
+    }
+    
     void SetSurge(double f)
     {
       this->surge += f;

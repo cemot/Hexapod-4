@@ -11,7 +11,10 @@
 #include "InverseKinematics.h";
 #include "ServoControllerBoard.h";
 
-    int group1Pulses[] = {1000, 1250, 1500, 1250};
+int group1Pulses[] = {1000, 1250, 1500, 1250};
+int legPulsesDirection[] = { -1, -1, -1, 1, 1, 1};
+//const int PULSE_BASE = 1600;
+const int PULSE_RADIUS = 500;
 
 class BodyMovementCalc
 {
@@ -22,13 +25,44 @@ class BodyMovementCalc
       : _servoControllerBoard(servoControllerBoard)
     {};
 
+    // move all legs to initial flat position
+    void Lift(int z)
+    {   
+        for (int leg = 1; leg <= 6; leg++) {
+          for(int legSegment = 1; legSegment <= 3; legSegment++){
+              int servoId = (leg - 1) * 3 + legSegment;
+              int legDirection = legPulsesDirection[leg - 1];
+              int pulse = 0;
+              int deltaPulse = z * 400;
+              
+              if(legSegment == 1 ) // coxa hor.
+              {
+                continue; // skip leg horizontal rotation
+                //pulse = 1000;
+              }
+              else if (legSegment == 2) // femur
+              {
+                //pulse = PULSE_BASE + legDirection * PULSE_RADIUS;
+                pulse = INITIAL_POSITION + legDirection * deltaPulse;
+              }
+              else if (legSegment == 3) // tibia
+              {
+                pulse = INITIAL_POSITION + -1 * legDirection * deltaPulse * 1.5;
+              }
+
+              _servoControllerBoard.SetServoPosition(servoId, pulse);
+        };
+      };
+      
+      _servoControllerBoard.MoveAll(500);
+    };
 
     //TODO: expose method to calculate the leg angles for a given body movement vector and timestep
     void Move()
     {
       // determine walking pattern
       // determine number of steps
-      int stepsize = 2;
+      int stepsize = 3;
       for (int i = 0; i < stepsize; i++) {
         // determine required leg position P for step i
 
@@ -43,8 +77,9 @@ class BodyMovementCalc
           _servoControllerBoard.SetServoPosition(servoId, servoPosition);
           // end for each leg ....
         }
+        
         // execute servo controller board cmd
-        int steptime = 100;
+        int steptime = 500;
         _servoControllerBoard.MoveAll(steptime);
       };
     };

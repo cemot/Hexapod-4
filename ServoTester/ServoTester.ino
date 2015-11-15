@@ -86,6 +86,7 @@ void loop() {
       {
         int pulse = pulses[leg - 1][joint - 1][loopCounter];
         int servoId = (leg - 1) * 3 + joint;
+        /*
         Serial.print("  Leg: ");
         Serial.print(leg);
         Serial.print("  J: ");
@@ -94,15 +95,15 @@ void loop() {
         Serial.print(servoId);
         Serial.print("  P: ");
         Serial.println(pulse);
-
+      */
         _servoControllerBoard.SetServoPosition(servoId, pulse);
       }
 
-      Serial.println();
+      //Serial.println();
     }
 
     _servoControllerBoard.MoveAll(300);
-    Serial.println();
+    //Serial.println();
 
     while (Serial1.available()) {
       int inByte = Serial1.read();
